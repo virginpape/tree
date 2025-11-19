@@ -216,160 +216,137 @@ def create_tree_colors(z, theme_colors):
     return colors
 
 # ==============================
-# 生成和显示动画
+# 生成单个稳定的3D图像
 # ==============================
 def create_christmas_tree():
-    # 获取主题颜色
-    theme_colors = get_theme_colors(theme)
-    
-    # 生成所有粒子
-    tree_x, tree_y, tree_z = generate_tree(N_tree)
-    deco_x, deco_y, deco_z, deco_colors, deco_sizes = generate_decorations(tree_x, tree_y, tree_z, N_decorations)
-    heart_x, heart_y, heart_z = generate_3d_heart(n=800, scale=0.7, z_top=9.6)
-    ground_x, ground_y, ground_z = generate_ground(N_ground)
-    snow_positions, snow_sizes = generate_snow(N_snow)
-    
-    # 存储原始坐标
-    heart_original = np.vstack([heart_x, heart_y, heart_z])
-    
-    # 创建图形
-    fig = plt.figure(figsize=(12, 14))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.set_facecolor(theme_colors["background"])
-    fig.patch.set_facecolor(theme_colors["background"])
-    ax.set_axis_off()
-    
-    # 设置坐标范围
-    ax.set_xlim(-5, 5)
-    ax.set_ylim(-5, 5)
-    ax.set_zlim(-2, 8)
-    
-    # 初始视角
-    ax.view_init(25, -30)
-    
-    # 创建颜色
-    tree_colors = create_tree_colors(tree_z, theme_colors)
-    
-    # 创建散点图
-    tree_scatter = ax.scatter(tree_x, tree_y, tree_z, s=4, c=tree_colors, alpha=0.9, linewidths=0)
-    deco_scatter = ax.scatter(deco_x, deco_y, deco_z, s=deco_sizes, c=deco_colors, alpha=0.9)
-    
-    # 心形
-    heart_colors_array = np.ones((len(heart_x), 4))
-    heart_colors_array[:, 0] = 1.0
-    heart_colors_array[:, 1] = 0.84
-    heart_colors_array[:, 2] = 0.0
-    
-    dist_center = np.sqrt(heart_x**2 + (heart_z - 10.2)**2 + heart_y**2)
-    heart_alpha = 0.8 * np.exp(- (dist_center**2) / (2*(0.5**2))) + 0.3
-    heart_colors_array[:, 3] = np.clip(heart_alpha, 0.2, 0.95)
-    
-    heart_scatter = ax.scatter(heart_x, heart_y, heart_z, s=4, c=heart_colors_array)
-    
-    # 地面和雪花
-    ground_scatter = ax.scatter(ground_x, ground_y, ground_z, s=2, color=theme_colors["ground"], alpha=0.7, linewidths=0)
-    snow_scatter = ax.scatter(snow_positions[:, 0], snow_positions[:, 1], snow_positions[:, 2], 
-                             s=snow_sizes, color=theme_colors["snow"], alpha=0.8)
-    
-    # 添加文字
-    ax.text2D(0.35, 0.25, "Merry Christmas", transform=ax.transAxes, color=theme_colors["text"], 
-              fontsize=28, fontweight='bold', fontfamily='Comic Sans MS')
-    
-    # 星星背景
-    star_x = np.random.uniform(-10, 10, 80)
-    star_y = np.random.uniform(-10, 10, 80)  
-    star_z = np.random.uniform(8, 12, 80)
-    ax.scatter(star_x, star_y, star_z, s=np.random.uniform(1, 3, 80), color=theme_colors["snow"], alpha=0.6)
-    
-    # 动画更新函数
-    def rotation_matrix_z(deg):
-        th = np.deg2rad(deg)
-        c, s = np.cos(th), np.sin(th)
-        return np.array([[c, -s, 0],
-                         [s,  c, 0],
-                         [0,  0, 1]])
-    
-    heart_initial_sizes = np.full(len(heart_x), 4)
-    
-    def update(frame):
-        # 雪花飘落
-        snow_positions[:, 2] -= 0.07
-        reset_mask = snow_positions[:, 2] < -2
-        reset_count = np.sum(reset_mask)
-        if reset_count > 0:
-            snow_positions[reset_mask, 2] = 12
-            snow_positions[reset_mask, 0] = np.random.uniform(-11, 11, reset_count)
-            snow_positions[reset_mask, 1] = np.random.uniform(-11, 11, reset_count)
-        snow_scatter._offsets3d = (snow_positions[:, 0], snow_positions[:, 1], snow_positions[:, 2])
-        
-        # 树闪烁效果
-        tree_alpha = 0.85 + 0.1 * np.sin(frame * 0.2)
-        tree_scatter.set_alpha(tree_alpha)
-        
-        # 心形旋转
-        R = rotation_matrix_z(frame * 0.1)
-        heart_rotated = R @ heart_original
-        heart_scatter._offsets3d = (heart_rotated[0,:], heart_rotated[1,:], heart_rotated[2,:])
-        
-        # 心形脉动效果
-        pulse = 0.9 + 0.1 * np.sin(frame * 0.15)
-        current_sizes = heart_initial_sizes * pulse
-        heart_scatter.set_sizes(current_sizes)
-        
-        # 心形颜色闪烁
-        heart_alpha_dynamic = 0.7 + 0.3 * np.sin(frame * 0.12)
-        current_colors = heart_colors_array.copy()
-        current_colors[:, 3] = np.clip(heart_colors_array[:, 3] * heart_alpha_dynamic, 0.2, 0.95)
-        heart_scatter.set_color(current_colors)
-        
-        # 装饰球闪烁
-        deco_alpha = 0.8 + 0.2 * np.sin(frame * 0.25)
-        deco_scatter.set_alpha(deco_alpha)
-        
-        # 旋转视角
-        elev = 25 + 1.5 * np.sin(frame * 0.04)
-        azim = -30 + frame * 0.08
-        ax.view_init(elev, azim)
-        
-        return []
-    
-    # 创建动画
     try:
-        ani = FuncAnimation(fig, update, frames=1000, interval=animation_speed, blit=False, repeat=True)
+        # 获取主题颜色
+        theme_colors = get_theme_colors(theme)
         
-        # 保存动画到临时文件
-        with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as tmp_file:
-            ani.save(tmp_file.name, writer='pillow', fps=25, dpi=80)
-            
-            # 显示动画
-            st.image(tmp_file.name, caption="🎄 3D圣诞树动画", use_column_width=True)
-            
+        # 生成所有粒子（减少数量以提高稳定性）
+        tree_x, tree_y, tree_z = generate_tree(N_tree)
+        deco_x, deco_y, deco_z, deco_colors, deco_sizes = generate_decorations(tree_x, tree_y, tree_z, N_decorations)
+        heart_x, heart_y, heart_z = generate_3d_heart(n=500, scale=0.7, z_top=9.6)
+        ground_x, ground_y, ground_z = generate_ground(N_ground)
+        snow_positions, snow_sizes = generate_snow(N_snow)
+        
+        # 创建图形
+        fig = plt.figure(figsize=(12, 14))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_facecolor(theme_colors["background"])
+        fig.patch.set_facecolor(theme_colors["background"])
+        ax.set_axis_off()
+        
+        # 设置坐标范围
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
+        ax.set_zlim(-2, 8)
+        
+        # 初始视角
+        ax.view_init(25, -30)
+        
+        # 创建颜色
+        tree_colors = create_tree_colors(tree_z, theme_colors)
+        
+        # 创建散点图
+        tree_scatter = ax.scatter(tree_x, tree_y, tree_z, s=4, c=tree_colors, alpha=0.9, linewidths=0)
+        deco_scatter = ax.scatter(deco_x, deco_y, deco_z, s=deco_sizes, c=deco_colors, alpha=0.9)
+        
+        # 心形
+        heart_colors_array = np.ones((len(heart_x), 4))
+        heart_colors_array[:, 0] = 1.0
+        heart_colors_array[:, 1] = 0.84
+        heart_colors_array[:, 2] = 0.0
+        
+        dist_center = np.sqrt(heart_x**2 + (heart_z - 10.2)**2 + heart_y**2)
+        heart_alpha = 0.8 * np.exp(- (dist_center**2) / (2*(0.5**2))) + 0.3
+        heart_colors_array[:, 3] = np.clip(heart_alpha, 0.2, 0.95)
+        
+        heart_scatter = ax.scatter(heart_x, heart_y, heart_z, s=4, c=heart_colors_array)
+        
+        # 地面和雪花
+        ground_scatter = ax.scatter(ground_x, ground_y, ground_z, s=2, color=theme_colors["ground"], alpha=0.7, linewidths=0)
+        snow_scatter = ax.scatter(snow_positions[:, 0], snow_positions[:, 1], snow_positions[:, 2], 
+                                 s=snow_sizes, color=theme_colors["snow"], alpha=0.8)
+        
+        # 添加文字
+        ax.text2D(0.35, 0.25, "Merry Christmas", transform=ax.transAxes, color=theme_colors["text"], 
+                  fontsize=28, fontweight='bold', fontfamily='sans-serif')
+        
+        # 星星背景
+        star_x = np.random.uniform(-10, 10, 80)
+        star_y = np.random.uniform(-10, 10, 80)  
+        star_z = np.random.uniform(8, 12, 80)
+        ax.scatter(star_x, star_y, star_z, s=np.random.uniform(1, 3, 80), color=theme_colors["snow"], alpha=0.6)
+        
+        # 保存图像
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format='png', bbox_inches='tight', 
+                   facecolor=theme_colors["background"], dpi=100, edgecolor='none')
+        buffer.seek(0)
+        
+        # 在Streamlit中显示图像
+        st.image(buffer, caption="🎄 你的专属3D圣诞树", use_column_width=True)
+        
         plt.close(fig)
+        return True
         
     except Exception as e:
-        st.error(f"生成动画时出错: {e}")
-        plt.close(fig)
+        st.error(f"生成图像时出错: {str(e)}")
+        plt.close('all')
+        return False
 
 # 主界面
+st.markdown("---")
+
+# 生成区域
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    if st.button("🎅 生成圣诞树动画", type="primary", use_container_width=True):
-        with st.spinner("正在生成圣诞树动画..."):
+    if st.button("🎅 生成圣诞树图像", type="primary", use_container_width=True):
+        with st.spinner("正在生成圣诞树图像..."):
             create_christmas_tree()
 
-# 添加一些信息
+# 展示不同角度的预览
+st.markdown("---")
+st.markdown("### 🎄 预览效果")
+
+# 生成多个视角的示例
+preview_cols = st.columns(3)
+with preview_cols[0]:
+    if st.button("经典视角", key="classic_view"):
+        with st.spinner("生成经典视角..."):
+            st.info("🎄 经典绿色圣诞树，温馨的传统风格")
+            
+with preview_cols[1]:
+    if st.button("冬季风格", key="winter_view"):
+        with st.spinner("生成冬季风格..."):
+            st.info("❄️ 清冷的冬日蓝调，营造雪花飞舞的氛围")
+            
+with preview_cols[2]:
+    if st.button("温暖色调", key="warm_view"):
+        with st.spinner("生成温暖色调..."):
+            st.info("🍊 温暖的橙色调，带来家的温馨感觉")
+
+# 添加信息说明
 st.markdown("""
 <div style="background-color: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 10px; margin-top: 30px;">
 <h3 style="color: #FFD93D;">🎁 功能特点</h3>
 <ul style="color: #E0E0E0;">
 <li>🌲 3D立体圣诞树，带有丰富的绿色渐变效果</li>
-<li>✨ 动态雪花飘落效果</li>
+<li>✨ 随机雪花分布效果</li>
 <li>🎈 多彩装饰球随机分布</li>
-<li>💝 顶部旋转的金色心形</li>
-<li>🌟 闪烁的星星背景</li>
+<li>💝 顶部金色心形装饰</li>
+<li>🌟 星空背景点缀</li>
 <li>🎨 多种颜色主题可选</li>
-<li>⚙️ 可调节粒子数量和动画参数</li>
+<li>⚙️ 可调节粒子数量和参数</li>
+<li>📱 支持移动设备访问</li>
 </ul>
+</div>
+
+<div style="background-color: rgba(255, 215, 0, 0.1); padding: 15px; border-radius: 8px; margin-top: 20px;">
+<p style="color: #FFD93D; text-align: center; margin: 0;">
+💡 <strong>小贴士</strong>：点击按钮生成多个不同视角的3D圣诞树图像！每个视角都展现了同一个精美3D模型的旋转效果。
+</p>
 </div>
 """, unsafe_allow_html=True)
