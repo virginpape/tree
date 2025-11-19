@@ -1,65 +1,25 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
 import random
-from math import pi, sin, cos, sqrt
-import tempfile
+import math
 import io
-import base64
 
 # 设置页面配置
 st.set_page_config(
-    page_title="3D圣诞树动画",
+    page_title="3D圣诞树",
     page_icon="🎄",
     layout="wide"
 )
 
-# CSS样式
-st.markdown("""
-<style>
-    .main-header {
-        text-align: center;
-        color: #FFD93D;
-        font-size: 3em;
-        margin-bottom: 20px;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    }
-    .description {
-        text-align: center;
-        font-size: 1.2em;
-        color: #E0E0E0;
-        margin-bottom: 30px;
-    }
-    .controls {
-        background-color: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-        margin: 20px 0;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<h1 class="main-header">🎄 3D圣诞树动画 🎄</h1>', unsafe_allow_html=True)
-st.markdown('<p class="description">一个精美的3D圣诞树动画，带有雪花、装饰球和旋转的心形</p>', unsafe_allow_html=True)
+# 标题
+st.title("🎄 3D圣诞树")
 
 # 参数控制
-with st.sidebar:
-    st.header("控制面板")
-    
-    # 粒子数量控制
-    N_tree = st.slider("树粒子数量", 1000, 10000, 6000, 1000)
-    N_ground = st.slider("地面粒子数量", 1000, 8000, 3500, 500)
-    N_snow = st.slider("雪花数量", 500, 3000, 1500, 250)
-    N_decorations = st.slider("装饰球数量", 100, 1000, 400, 50)
-    
-    # 动画控制
-    animation_speed = st.slider("动画速度", 10, 100, 40, 10)
-    show_wireframe = st.checkbox("显示线框", False)
-    
-    # 颜色主题
-    theme = st.selectbox("颜色主题", 
-                        ["经典绿色", "冬季蓝", "温暖橙", "神秘紫"])
+st.sidebar.header("控制面板")
+N_tree = st.sidebar.slider("树粒子数量", 1000, 8000, 3000, 500)
+N_snow = st.sidebar.slider("雪花数量", 200, 2000, 800, 100)
+theme = st.sidebar.selectbox("颜色主题", ["经典绿色", "冬季蓝", "温暖橙"])
 
 # ==============================
 # 主题颜色配置
